@@ -13,6 +13,9 @@ import { getValidScripts, executeScript } from 'lib/ScriptUtils';
 import { buildRelatedTextFieldsMenuItem } from 'lib/RelatedRecordsUtils';
 import Parse from 'parse';
 import Pill from 'components/Pill/Pill.react';
+import PointerArrayPreview, {
+  isPointerValue,
+} from 'components/BrowserCell/PointerArrayPreview.react';
 import React, { Component } from 'react';
 import ScriptConfirmationModal from 'components/ScriptConfirmationModal/ScriptConfirmationModal.react';
 import styles from 'components/BrowserCell/BrowserCell.scss';
@@ -112,41 +115,22 @@ export default class BrowserCell extends Component {
 
       this.copyableValue = this.props.value.id;
     } else if (this.props.type === 'Array') {
-      if (
-        this.props.value[0] &&
-        typeof this.props.value[0] === 'object' &&
-        this.props.value[0].__type === 'Pointer' &&
-        typeof this.props.onPointerClick === 'function'
-      ) {
-        const array = [];
-        this.props.value.map((v, i) => {
-          if (typeof v !== 'object' || v.__type !== 'Pointer') {
-            throw new Error('Invalid type found in pointer array');
-          }
-          const object = new Parse.Object(v.className);
-          object.id = v.objectId;
-          array.push(
-            <Pill
-              key={i}
-              value={v.objectId}
-              onClick={this.props.onPointerClick.bind(undefined, object)}
-              followClick={true}
-              shrinkablePill
-            />
-          );
-        });
+      const isPointerArray =
+        Array.isArray(this.props.value) &&
+        this.props.value.some(isPointerValue) &&
+        typeof this.props.onPointerClick === 'function';
+      if (isPointerArray) {
         content = (
-          <ul className={styles.pointerList}>
-            {array.map((a, i) => (
-              <li key={i}>{a}</li>
-            ))}
-          </ul>
+          <PointerArrayPreview
+            onPointerClick={this.props.onPointerClick}
+            values={this.props.value}
+          />
         );
-        // Set copyableValue to JSON string, not JSX (to avoid infinite render loop)
-        this.copyableValue = JSON.stringify(this.props.value);
       } else {
-        this.copyableValue = content = JSON.stringify(this.props.value);
+        content = JSON.stringify(this.props.value);
       }
+      // Set copyableValue to JSON string, not JSX (to avoid infinite render loop)
+      this.copyableValue = JSON.stringify(this.props.value);
     } else if (this.props.type === 'Date') {
       if (typeof value === 'object' && this.props.value.__type) {
         this.props.value = new Date(this.props.value.iso);
