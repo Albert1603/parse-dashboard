@@ -12,6 +12,34 @@ import { renderComponent } from './renderWithAct';
 const BrowserCell = require('../../components/BrowserCell/BrowserCell.react').default;
 
 describe('BrowserCell', () => {
+  describe('Array fields', () => {
+    it('renders pointer navigation for heterogeneous arrays without throwing', () => {
+      const value = [
+        { label: 'Generic object' },
+        {
+          __type: 'Pointer',
+          className: 'Target',
+          objectId: 'pointerId',
+        },
+        null,
+      ];
+      const component = renderComponent(
+        <BrowserCell type="Array" value={value} onPointerClick={jest.fn()} />
+      );
+
+      expect(
+        component.root.findByProps({ 'aria-label': 'Show all 3 array items' }).children.join('')
+      ).toBe('+2');
+    });
+
+    it('keeps generic arrays in their JSON representation', () => {
+      const value = [{ label: 'Generic object' }, null];
+      const component = renderComponent(<BrowserCell type="Array" value={value} />).toJSON();
+
+      expect(component.children).toContain(JSON.stringify(value));
+    });
+  });
+
   describe('Required fields', () => {
     it('should not highlight 0 value', () => {
       const component = renderComponent(<BrowserCell value={0} markRequiredField={true} isRequired={true} />)
